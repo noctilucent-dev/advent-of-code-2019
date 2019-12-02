@@ -1,12 +1,9 @@
 const fs = require('fs');
 
 const content = fs.readFileSync('input.txt', 'utf-8');
-const program = content.split(',').map(i => +i);
+const originalProgram = content.split(',').map(i => +i);
 
-let instPtr = 0;
-
-program[1] = 12;
-program[2] = 2;
+const targetOutput = 19690720;
 
 const instructions = {
     1: {
@@ -19,16 +16,42 @@ const instructions = {
     }
 };
 
-while(instPtr < program.length) {
-    const opCode = program[instPtr];
+function runProgram(noun, verb) {
+    const program = [...originalProgram];
 
-    if (opCode == 99) break;
+    let instPtr = 0;
 
-    const instruction = instructions[opCode];
-    const params = program.slice(instPtr + 1, instPtr + 1 + instruction.params);
-    instruction.execute(program, ...params);
+    program[1] = noun;
+    program[2] = verb;
 
-    instPtr += instruction.params + 1;
+    while(instPtr < program.length) {
+        const opCode = program[instPtr];
+
+        if (opCode == 99) break;
+
+        const instruction = instructions[opCode];
+        const params = program.slice(instPtr + 1, instPtr + 1 + instruction.params);
+        instruction.execute(program, ...params);
+
+        instPtr += instruction.params + 1;
+    }
+
+    return program[0];
 }
 
-console.log(program[0]);
+let found = false;
+
+const MAX_VAL = 100;
+
+for (let noun=0; noun<MAX_VAL && !found; noun++) {
+    for (let verb=0; verb<MAX_VAL && !found; verb++) {
+        const result = runProgram(noun, verb);
+        if (result === targetOutput) {
+            console.log(`Found result: noun=${noun}, verb=${verb}`);
+            console.log(`Answer=${100 * noun + verb}`);
+            found = true;
+        }
+    }
+}
+
+if (!found) console.log('No solution found');
