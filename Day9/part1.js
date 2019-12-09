@@ -77,7 +77,7 @@ class Machine {
 
     runToEnd() {
         let loopCount = 0;
-        while(loopCount < 1000) {
+        while(loopCount < Infinity) {
             const result = this.executeNext();
             switch (result) {
                 case 'halt':
@@ -133,7 +133,8 @@ class Machine {
             execute: (modes, params) => {
                 const vals = params.slice(0, 2).map(this.paramConverter(modes));
                 const [a, b] = vals;
-                const c = params[2];
+                let c = params[2];
+                if (modes[2] === 2) c += this.relativeBase;
 
                 this.program[c] = a + b;
             }
@@ -144,7 +145,8 @@ class Machine {
             execute: (modes, params) => {
                 const vals = params.slice(0, 2).map(this.paramConverter(modes));
                 const [a, b] = vals;
-                const c = params[2];
+                let c = params[2];
+                if (modes[2] === 2) c += this.relativeBase;
 
                 this.program[c] = a * b;
             }
@@ -154,7 +156,12 @@ class Machine {
             params: 1,
             execute: (modes, params) => {
                 //const [addr] = params;
-                const [addr] = params.map(this.paramConverter(modes));
+                //const [addr] = params.map(this.paramConverter(modes));
+                let addr = params[0];
+                if (modes[0] === 2) {
+                    addr = this.relativeBase + addr;
+                }
+
                 this.program[addr] = this.input.pop();
             }
         },
@@ -194,7 +201,8 @@ class Machine {
             params: 3,
             execute: (modes, params) => {
                 const [a, b] = params.map(this.paramConverter(modes));
-                const addr = params[2];
+                let addr = params[2];
+                if (modes[2] === 2) addr = this.relativeBase + addr;
                 this.program[addr] = a < b ? 1 : 0;
             }
         },
@@ -203,7 +211,8 @@ class Machine {
             params: 3,
             execute: (modes, params) => {
                 const [a, b] = params.map(this.paramConverter(modes));
-                const addr = params[2];
+                let addr = params[2];
+                if (modes[2] === 2) addr = this.relativeBase + addr;
                 this.program[addr] = a === b ? 1 : 0;
             }
         },
@@ -219,7 +228,7 @@ class Machine {
 }
 
 const machine = new Machine([...originalProgram]);
-machine.queueInput(1);
+machine.queueInput(2);
 
 try {
     machine.runToEnd();
