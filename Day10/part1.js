@@ -1,17 +1,14 @@
 const fs = require('fs');
 
 let content = fs.readFileSync('input.txt', 'utf-8').trim();
-content = `
-.#..#
-.....
-#####
-....#
-...##`;
+
+// Construct a 2-d map of asteroid locations using 1-bit values
 const map = content.split('\n').map(l => l.split('').map(c => c === '#' ? 1 : 0));
 
 const height = map.length;
 const width = map[0].length;
 
+// Create a list of all asteroid co-ordinates
 const asteroids = [];
 for(let row=0; row<height; row++) {
     for(let col=0; col<width; col++) {
@@ -19,151 +16,72 @@ for(let row=0; row<height; row++) {
     }
 }
 
-// function gcd(a, b) {
-//     if (a === 0) return b;
-//     return gcd(b % a, a);
-// }
-
-function gcd(a, b) {
-    while(b) {
-        let t = b;
-        b = a % b;
-        a = t;
-    }
-    return a;
-}
-
-// function commonDivisors(a, b) {
-//     const n = gcd(a, b);
-
-//     const divisors = [];
-
-//     for(let i=1; i<=Math.sqrt(n); i++) {
-//         if (n % i === 0) {
-//             divisors.push(i);
-//             if (n / i !== i) divisors.push(n);
-//         }
-//     }
-
-//     divisors.sort();
-//     divisors.reverse();
-
-//     console.log(divisors);
-
-//     return divisors;
-// }
-
-// // console.log(asteroids);
-
-// function pointsToOrigin(x, y) {
-//     const divisors = commonDivisors(x, y);
-//     return divisors.map(d => [x/d, y/d]);
-// }
-
-// function pointsToOrigin2(x, y) {
-//     const min = Math.min(x, y);
-//     const points = [];
-//     for(let i=2; i<min; i++) {
-//         if (x % i === 0 && y % i === 0) {
-//             points.push([x/i, y/i]);
-//         }
-//     }
-
-//     return points;
-// }
-
-// function gcdExtended(a, b) {
-//     if (a === 0) {
-//         return {
-//             gcd: b,
-//             x: 0,
-//             y: 1
-//         };
-//     }
-
-//     const {gcd, x, y} = gcdExtended(b % a);
-
-//     return {
-//         gcd,
-//         x: y - (b/a) * x,
-//         y: x
-//     };
-// }
-
-// function pointsBetween(start, end) {
-//     let A = start[1] - end[1];
-//     let B = end[0] - start[0];
-//     let C = start[0] * (start[1] - end[1]) + start[1] * (end[0] - start[0]);
-
-//     const {gcd, x, y} = gcdExtended(A, B);
-
-//     if (C % gcd !== 0) return [];
-
-
-
-//     // calculate slope
-//     const m = (y2 - y1) / (x2 - x1);
-    
-// }
-
+// Calculates all the whole-integer points that fall on the line between the two specified points
 function pointsBetween(start, end) {
+    // Vertical lines have to be treated differently
+    if(start[0] === end[0]) {
+        // Simply iterate through each y value
+        const points = [];
+        for (let y=start[1]; start[1] < end[1] ? y<=end[1] : y >= end[1]; start[1] < end[1] ? y++ : y--) {
+            points.push([start[0],y]);
+        }
+        return points;
+    }
+
     const [x0, y0] = start;
     const [x1, y1] = end;
 
     const dx = x1 - x0;
     const dy = y1 - y0;
-    // const n = gcd(dx, dy);
-    // console.log(n);
     const slope = dy/dx;
-    const derr = Math.abs(dy / dx);
-    let error = 0;
-    const points = [];
-    // console.log(slope);
 
+    const points = [];
+
+    // Iterate over each whole x co-order between the start and end
     for(let x = x0; x1 > x0 ? x <= x1 : x >= x1; x1 > x0 ? x++ : x--) {
-        //if (y % dx !== 0) continue;
+        // Calculate the y co-ord (using standard formula for a straight line)
         const y = slope * (x - x0) + y0;
 
-        // console.log(`${x},${y}`);
+        // Check if y is an integer
         if (y === ~~y) points.push([x, y]);
     }
 
     return points;
 }
 
+// Checks whether the is an asteroid on a line between two points (exclusive)
 function isBlocked(start, target) {
     const points = pointsBetween(start, target);
-    for(let i=1; i < points.length -1; i++) {
+    for(let i=1; i < points.length -1; i++) { // ignore first and last points
         const [x, y] = points[i];
 
+        // Check the map
         if (map[y][x]) {
-            console.log(`Blocked at ${x},${y}`);
             return true;
         }
     }
+    
     return false;
 }
 
 let max = 0;
 let best;
 
-asteroids.map((a, i) => {
-    console.log(`Considering asteroid ${i} (${a[0]},${a[1]})`);
+// Consider each asteroid in turn
+asteroids.forEach((a, i) => {
+    // count the number of visible asteroids
     const visible = asteroids.reduce((p, other, otherIndex) => {
-        if (i === otherIndex) return p;
-        console.log(`Looking to ${other[0]},${other[1]}`);
-        if (isBlocked(a, other)) return p;
-        console.log(`Visible`);
+        if (i === otherIndex) return p;    // this asteroid - ignore
+        if (isBlocked(a, other)) return p; // blocked by another asteroid
         return p + 1;
     }, 0);
-    console.log(`${visible} visible`);
-    console.log('');
 
+    // Compare with best so far
     if (visible > max) {
         max = visible;
         best = a;
     }
-})
+});
 
 console.log(best);
 console.log(max);
