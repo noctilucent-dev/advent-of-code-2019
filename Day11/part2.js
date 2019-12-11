@@ -24,7 +24,7 @@ class Machine {
         this.relativeBase = 0;
         this.pos = [0, 0];
         this.direction = 0;
-        this.panels = [];
+        this.panels = [[1]]; // set panel under robot white
         this.moving = false;
         this.paintedCount = 0;
         this.min = [0,0];
@@ -95,7 +95,7 @@ class Machine {
         for(let row = this.max[1]; row >= this.min[1]; row--) {
             let line = '';
             for (let col = this.min[0]; col <= this.max[0]; col++) {
-                let c = '#';
+                let c = '██';
                 if (this.pos[0] === col && this.pos[1] === row) {
                     switch(this.direction) {
                         case 0:
@@ -112,7 +112,7 @@ class Machine {
                             break;
                     }
                 }
-                else if (!this.panels[row] || !this.panels[row][col]) c = '.';
+                else if (!this.panels[row] || !this.panels[row][col]) c = '  ';
 
                 line += c;
             }
@@ -218,6 +218,9 @@ class Machine {
                     if (this.pos[0] > this.max[0]) this.max[0] = this.pos[0];
                     if (this.pos[1] < this.min[1]) this.min[1] = this.pos[1];
                     if (this.pos[1] > this.max[1]) this.max[1] = this.pos[1];
+
+                    // this.print();
+                    // console.log();
                 } else {
                     //const val = this.getValue(addr);
                     const [x, y] = this.pos;
@@ -295,4 +298,3 @@ try {
     console.log(err);
     console.log(machine);
 }
-console.log(machine.paintedCount);
