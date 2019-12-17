@@ -2,26 +2,11 @@ let content = '59787832768373756387231168493208357132958685401595722881580547807
 //content = '12345678';
 //content = '80871224585914546619083218645595';
 
-let input = content.split('').map(n => +n);
+let input = content.split('').map(Number);
 
-function getCoe(repitiion, listLength) {
+function getCoe(repitition, offset, index) {
     const base = [0,1,0,-1];
-    const coe = [];
-
-    for(let i=0; i<listLength; i++) {
-        const baseIndex = (Math.floor((i + 1) / (repitiion + 1))) % base.length;
-        coe[i] = base[baseIndex];
-    }
-    
-    return coe;
-}
-
-function product(arr1, arr2) {
-    return arr1.map((n, i) => n * arr2[i]);
-}
-
-function sumArray(arr) {
-    return arr.reduce((p, c) => p + c);
+    return base[Math.floor((index + offset) / (repitition + 1)) % base.length];
 }
 
 function lastDigit(sum) {
@@ -35,9 +20,7 @@ while (phase < 100) {
     const newDigits = [];
 
     for (let repitition=0; repitition<content.length; repitition++) {
-        const coe = getCoe(repitition, input.length);
-        const output = product(input, coe);
-        const sum = sumArray(output);
+        let sum = input.map((n, i) => n * getCoe(repitition, 1, i)).reduce((p, c) => p + c);
         const digit = lastDigit(sum);
         newDigits.push(digit);
     }

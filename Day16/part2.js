@@ -2,55 +2,34 @@ let content = '59787832768373756387231168493208357132958685401595722881580547807
 //content = '12345678';
 //content = '80871224585914546619083218645595';
 //content = '03036732577212944063491565474664';
-content = '12345';
-//const CONTENT_REPLICATIONS = 10000;
-const CONTENT_REPLICATIONS = 10;
+//content = '1234';
+const CONTENT_REPLICATIONS = 10000;
 
+// Repeat content
 let input = '';
 for(let i=0; i<CONTENT_REPLICATIONS; i++) input += content;
+const offset = Number(input.substring(0,7));
 
-function* getCoe(repitiion, listLength, offset) {
-    const base = [0,1,0,-1];
-    let i = 0;
-
-    while (true) {
-        const baseIndex = (Math.floor((i + offset) / (repitiion + 1))) % base.length;
-        yield base[baseIndex];
-        i++;
-    }
-}
-
-function lastDigit(sum) {
-    return Math.abs(sum) % 10;
-}
+// Discard all digits more significant than the offset
+input = input.substring(offset).split('').map(Number);
 
 let phase = 0;
+let newDigits = new Array(input.length);
 
-while (phase < 10) {
-    let newDigits = '';
-    for (let repitition=0; repitition<input.length; repitition++) {
-        let sum = 0;
-        const coeIterator = getCoe(repitition, input.length, 1);
-        const products = input.split('').map(v => Math.abs(v * coeIterator.next().value));
-        sum += products.reduce((p, c) => p + c);
-        console.log(products.join(','));
+while (phase < 100) {
+    let sum = 0;
 
-        // for (let i=0; i<input.length; i++) {
-        //     const coe = coeIterator.next().value;
-        //     sum += input[i] * coe;
-        // }
+    // Iterate from least significant digit to most
+    for (let i=input.length-1; i>=0; i--) {
+        // Co-efficient will always be 1 for large offsets
+        sum = (sum + input[i]) % 10;
 
-        newDigits += lastDigit(sum).toString();
+        // We can safely set this digit as it won't be affected by 'larger' numbers
+        newDigits[i] = sum;
     }
 
     input = newDigits;
     phase++;
-    console.log('');
 }
 
-const offset = (input.substring(0,7) * 1);
-console.log(offset);
-const val = input.substring(offset, offset + 7);
-console.log(val);
-
-console.log(input.substring(0,8));
+console.log(input.slice(0, 8).join(''));
