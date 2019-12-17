@@ -25,6 +25,11 @@ class Machine {
         this.input.unshift(val);
     }
 
+    queueInputArr(arr) {
+        arr.reverse();
+        this.input = arr.concat(this.input);
+    }
+
     dequeueOutput() {
         return this.output.pop();
     }
