@@ -1,7 +1,28 @@
 const fs = require('fs');
 let content = fs.readFileSync('input.txt', 'utf-8');
 
-let map = content.trim().split('\n').map(l => l.split(''));
+// Change the middle bit
+const lineLength = content.search('\n') + 1;
+const numLines = content.length / lineLength;
+const centreRow = Math.floor((numLines-1) / 2);
+const centreCol = content.search('@') % lineLength;
+content = content.substring(0,(centreRow-1)*lineLength + centreCol - 1) + '@#@' + content.substring((centreRow-1)*lineLength + centreCol + 2);
+content = content.substring(0,centreRow*lineLength + centreCol - 1) + '###' + content.substring(centreRow*lineLength + centreCol + 2);
+content = content.substring(0,(centreRow+1)*lineLength + centreCol - 1) + '@#@' + content.substring((centreRow+1)*lineLength + centreCol + 2);
+
+// Split into four maps
+let topLeft = '', topRight = '', bottomLeft = '', bottomRight = '';
+for (let i=0; i<=centreRow; i++) {
+    topLeft += content.substring((lineLength * i), (lineLength * i)+centreCol+1) + '\n';
+    topRight += content.substring((lineLength * i) + centreCol, lineLength * (i +1));
+    bottomLeft += content.substring(lineLength * (i + centreRow), lineLength * (i + centreRow)+centreCol+1) + '\n';
+    bottomRight += content.substring((lineLength * (i + centreRow)) + centreCol, lineLength * (i + centreRow +1));
+}
+
+const quadContent = [topLeft, topRight, bottomLeft, bottomRight];
+
+let overallMap = content.trim().split('\n').map(l => l.split(''));
+let quadMaps = quadContent.map(c => c.trim().split('\n').map(l => l.split('')));
 
 function isDoor(symbol) {
     return /[A-Z]/.test(symbol);
@@ -11,14 +32,20 @@ function isKey(symbol) {
     return /[a-z]/.test(symbol);
 }
 
-// Find the location of the start and all keys
-const keyLocations = {};
-for(let y=0; y<map.length; y++) {
-    for(let x=0; x<map[y].length; x++) {
-        const symbol = map[y][x];
-        if (isKey(symbol) || symbol === '@') keyLocations[symbol] = [x, y];
+function getKeyLocations(map) {
+    const keyLocations = {};
+    for(let y=0; y<map.length; y++) {
+        for(let x=0; x<map[y].length; x++) {
+            const symbol = map[y][x];
+            if (isKey(symbol) || symbol === '@') keyLocations[symbol] = [x, y];
+        }
     }
+    return keyLocations;
 }
+
+const allKeyLocations = getKeyLocations(overallMap);
+const quadKeyLocations = quadMaps.map(getKeyLocations);
+const keyCount = Object.keys(allKeyLocations).filter(isKey).length;
 
 // Creates a basic graph from the specified map.
 // Each node links to its non-wall neighbours
@@ -102,7 +129,7 @@ const cache = {};
 // Iterates over the 'reachable' keys and calls itself recursively.
 // Takes the original map, graph, the start (@ or key) and a list of unlocked doors
 // Additionally, the depth variable is used for logging purposes and early infinite recursion detection.
-function solve(map, graph, start, unlocked, depth) {
+function solve(quadMaps, quadGraphs, starts, unlocked, depth) {
     // Allows for configurable logging
     const log = message => {
         if(depth <= debugDepth) {
@@ -112,52 +139,76 @@ function solve(map, graph, start, unlocked, depth) {
 
     // Check if we've already solved from this state
     // Note - this cache reduces the solution time by orders of magnitude
-    const cacheKey = start + ',' + Array.from(unlocked).sort().join(',');
+    const cacheKey = starts.join(',') + ',' + Array.from(unlocked).sort().join(',');
     if (cache[cacheKey]) {
         log(`Cached: ${cacheKey}`);
         return cache[cacheKey];
     }
     
-    log(`Solving for ${start} with ${JSON.stringify(Array.from(unlocked))}`);
+    log(`Solving for ${starts} with ${JSON.stringify(Array.from(unlocked))}`);
 
     if (depth > 26) {
         throw new Error(`Depth exceeded`);
     }
 
     // Create a distance map from this location if not done already
-    if (!keyLocations[start].nodes) {
-        log(`Mapping distances from ${start}`);
-        keyLocations[start].nodes =  mapFromPoint(map, graph, keyLocations[start]);
-    }
-
-    // Find all the keys we can reach from this location without going through locked doors
-    const reachable = keyLocations[start].nodes.flat().filter(n => {
-        if(!isKey(n.symbol)) return false;
-        if(unlocked.has(n.symbol.toUpperCase())) return false;
-        if(n.blockedBy.some(d => !unlocked.has(d))) return false;
-        return true;
+    quadKeyLocations.forEach((keyLocations, i) => {
+        const start = starts[i];
+        if (!keyLocations[start].nodes) {
+            log(`Mapping distances from ${start} in quadrant ${i}`);
+            keyLocations[start].nodes = mapFromPoint(quadMaps[i], quadGraphs[i], keyLocations[start]);
+        }
     });
 
-    if (reachable.length > 0) log(reachable.map(r => r.symbol));
-    
-    // No keys left - must be done
-    if (reachable.length === 0) {
-        log(`Reached end`);
-        return 0;
-    }
-
-    // Recurse for each key, and record best solution
+    let anyReachable = false;
     let minSteps = Infinity;
-    reachable.forEach(r => {
-        // Add the door this key unlocks
-        const u = new Set(unlocked);
-        u.add(r.symbol.toUpperCase());
 
-        let rSteps = solve(map, graph, r.symbol, u, depth + 1);
+    for(let robot=0; robot<4; robot++) {
+        const start = starts[robot];
+        const keyLocations = quadKeyLocations[robot];
 
-        rSteps += r.distance;
-        if (rSteps < minSteps) minSteps = rSteps;
-    });
+        // Find all the keys we can reach from this location without going through locked doors
+        const reachable = keyLocations[start].nodes.flat().filter(n => {
+            if(!isKey(n.symbol)) return false;
+            if(unlocked.has(n.symbol.toUpperCase())) return false;
+            if(n.blockedBy.some(d => !unlocked.has(d))) return false;
+            return true;
+        });
+      
+        // No keys left - must be done
+        if (reachable.length === 0) {
+            log(`Nowhere for robot ${robot} to go`);
+            continue;
+        }
+
+        log(`Robot ${robot} has ${reachable.length} option(s): ${reachable.map(r => r.symbol)}`);
+        anyReachable = true;
+
+        // Recurse for each key, and record best solution
+        reachable.forEach(r => {
+            // Add the door this key unlocks
+            const u = new Set(unlocked);
+            u.add(r.symbol.toUpperCase());
+
+            let newStarts = [...starts];
+            newStarts[robot] = r.symbol;
+
+            let rSteps = solve(quadMaps, quadGraphs, newStarts, u, depth + 1);
+
+            rSteps += r.distance;
+            if (rSteps < minSteps) minSteps = rSteps;
+        });
+    }
+
+    if (!anyReachable) {
+        if (unlocked.size === keyCount) {
+            log(`All unlocked`);
+            return 0;
+        } else {
+            log(`Dead end - ${keyCount - unlocked.size} remaining`);
+            return Infinity;
+        }
+    }
 
     log(`Min steps: ${minSteps}`);
 
@@ -172,11 +223,10 @@ function solve(map, graph, start, unlocked, depth) {
 //     keyLocations[symbol].nodes = nodes;
 // });
 
-console.log(`Calculating graph`);
-const graph = createGraph(map);
+const quadGraphs = quadMaps.map(createGraph);
 
 console.log(`Solving`);
-const steps = solve(map, graph, '@', new Set(), 0);
+const steps = solve(quadMaps, quadGraphs, ['@', '@', '@', '@'], new Set(), 0);
 console.log(steps);
 
-// answer = 5182
+// answer = 2154
