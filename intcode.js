@@ -13,20 +13,19 @@ function parseInstruction(inst) {
 }
 
 class Machine {
-    constructor(program, firstInput) {
+    constructor(program, input) {
         this.program = [...program];
-        this.input = firstInput === undefined ? [] : [firstInput];
+        this.input = input === undefined ? [] : input;
         this.output = [];
         this.instPtr = 0;
         this.relativeBase = 0;
     }
 
     queueInput(val) {
-        this.input.unshift(val);
+        this.input.push(val);
     }
 
     queueInputArr(arr) {
-        arr.reverse();
         this.input = arr.concat(this.input);
     }
 
@@ -158,7 +157,7 @@ class Machine {
                     addr = this.relativeBase + addr;
                 }
 
-                this.program[addr] = this.input.pop();
+                this.program[addr] = this.input.shift();
             }
         },
         // output

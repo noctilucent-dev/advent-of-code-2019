@@ -62,3 +62,6 @@ typings/
 
 ## AOC files
 **/input.txt
+
+## VSCode files
+.vscode

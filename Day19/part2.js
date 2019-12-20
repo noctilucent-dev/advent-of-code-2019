@@ -8,18 +8,12 @@ const Machine = require('../intcode');
 // Checks whether the given coordinates contain a beam
 // Returns 1 (true) or 0 (false)
 function isBeam(x, y) {
-    const machine = new Machine([...program]);
-
-    // Input phase
-    let interrupt = machine.runToInterrupt();
-    if (interrupt !== 'input') throw new Error(`Unexpect interrupt during input phase: ${interrupt}`);
-
-    machine.queueInput(x);
-    machine.queueInput(y);
-
-    // Output phase
+    const machine = new Machine([...program], [x,y]);
+    
     interrupt = machine.runToInterrupt();
-    if (interrupt !== 'output') throw new Error(`Unexpect interrupt during output phase: ${interrupt}`);
+
+    if (interrupt !== 'output')
+        throw new Error(`Unexpect interrupt during output phase: ${interrupt}`);
 
     return machine.dequeueOutput();
 }
