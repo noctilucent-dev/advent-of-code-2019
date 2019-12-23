@@ -12,6 +12,17 @@ function parseInstruction(inst) {
     };
 }
 
+const OPCODE_HALT = 99;
+const OPCODE_ADD = 1;
+const OPCODE_MUL = 2;
+const OPCODE_INPUT = 3;
+const OPCODE_OUTPUT = 4;
+const OPCODE_JUMP_IF_TRUE = 5;
+const OPCODE_JUMP_IF_FALSE = 6;
+const OPCODE_LESS_THAN = 7;
+const OPCODE_EQUALS = 8;
+const OPCODE_ADJUST_RELATIVE_BASE = 9;
+
 class Machine {
     constructor(program, input) {
         this.program = [...program];
@@ -37,10 +48,10 @@ class Machine {
         const { opCode, modes } = parseInstruction(this.program[this.instPtr]);
 
         switch (opCode) {
-            case 99:
+            case OPCODE_HALT:
                 return 'halt';
 
-            case 3:
+            case OPCODE_INPUT:
                 // abort if our input queue is empty
                 if (this.input.length === 0) return 'input';
         }
@@ -123,7 +134,7 @@ class Machine {
 
     instructions = {
         // addition
-        1: {
+        [OPCODE_ADD]: {
             params: 3,
             execute: (modes, params) => {
                 const vals = params.slice(0, 2).map(this.paramConverter(modes));
@@ -135,7 +146,7 @@ class Machine {
             }
         },
         // multiplication
-        2: {
+        [OPCODE_MUL]: {
             params: 3,
             execute: (modes, params) => {
                 const vals = params.slice(0, 2).map(this.paramConverter(modes));
@@ -147,7 +158,7 @@ class Machine {
             }
         },
         // input
-        3: {
+        [OPCODE_INPUT]: {
             params: 1,
             execute: (modes, params) => {
                 //const [addr] = params;
@@ -161,7 +172,7 @@ class Machine {
             }
         },
         // output
-        4: {
+        [OPCODE_OUTPUT]: {
             params: 1,
             execute: (modes, params) => {
                 const [val] = params.map(this.paramConverter(modes));
@@ -170,7 +181,7 @@ class Machine {
             }
         },
         // jump-if-true
-        5: {
+        [OPCODE_JUMP_IF_TRUE]: {
             params: 2,
             execute: (modes, params) => {
                 const [test, instPtr] = params.map(this.paramConverter(modes));
@@ -181,7 +192,7 @@ class Machine {
             }
         },
         // jump-if-false
-        6: {
+        [OPCODE_JUMP_IF_FALSE]: {
             params: 2,
             execute: (modes, params) => {
                 const [test, instPtr] = params.map(this.paramConverter(modes));
@@ -192,7 +203,7 @@ class Machine {
             }
         },
         // less than
-        7: {
+        [OPCODE_LESS_THAN]: {
             params: 3,
             execute: (modes, params) => {
                 const [a, b] = params.map(this.paramConverter(modes));
@@ -202,7 +213,7 @@ class Machine {
             }
         },
         // equals
-        8: {
+        [OPCODE_EQUALS]: {
             params: 3,
             execute: (modes, params) => {
                 const [a, b] = params.map(this.paramConverter(modes));
@@ -212,7 +223,7 @@ class Machine {
             }
         },
         // Adjust relative base
-        9: {
+        [OPCODE_ADJUST_RELATIVE_BASE]: {
             params: 1,
             execute: (modes, params) => {
                 const [val] = params.map(this.paramConverter(modes));
@@ -222,4 +233,18 @@ class Machine {
     };
 }
 
-module.exports = Machine;
+module.exports = {
+    Machine,
+    opCodes: {
+        OPCODE_HALT,
+        OPCODE_ADD,
+        OPCODE_MUL,
+        OPCODE_INPUT,
+        OPCODE_OUTPUT,
+        OPCODE_JUMP_IF_TRUE,
+        OPCODE_JUMP_IF_FALSE,
+        OPCODE_LESS_THAN,
+        OPCODE_EQUALS,
+        OPCODE_ADJUST_RELATIVE_BASE
+    }
+};
