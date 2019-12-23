@@ -3,7 +3,7 @@ const fs = require('fs');
 let content = fs.readFileSync('input.txt', 'utf-8');
 let program = content.trim().split(',').map(Number);
 
-const Machine = require('../intcode');
+const { Machine } = require('../intcode');
 
 const MAX_X = 49;
 const MAX_Y = 49;

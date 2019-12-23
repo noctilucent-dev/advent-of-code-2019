@@ -1,5 +1,5 @@
 const fs = require('fs');
-const Machine = require('../intcode');
+const { Machine } = require('../intcode');
 
 const toCharCodes = f => f.split('').map(s => s.charCodeAt(0));
 

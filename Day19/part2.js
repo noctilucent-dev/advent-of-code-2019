@@ -3,7 +3,7 @@ const fs = require('fs');
 let content = fs.readFileSync('input.txt', 'utf-8');
 let program = content.trim().split(',').map(Number);
 
-const Machine = require('../intcode');
+const { Machine } = require('../intcode');
 
 // Checks whether the given coordinates contain a beam
 // Returns 1 (true) or 0 (false)

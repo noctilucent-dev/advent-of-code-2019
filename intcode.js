@@ -45,15 +45,28 @@ class Machine {
     }
 
     executeNext() {
+        const result = this.tryExecuteNext();
+        if (result.opCode === OPCODE_HALT) return 'halt';
+        if (result.opCode === OPCODE_INPUT && !result.didExecute) return 'input';
+        if (result.opCode === OPCODE_OUTPUT) return 'output';
+    }
+
+    tryExecuteNext() {
         const { opCode, modes } = parseInstruction(this.program[this.instPtr]);
 
         switch (opCode) {
-            case OPCODE_HALT:
-                return 'halt';
+            case 99:
+                return {
+                    didExecute: false,
+                    opCode
+                };
 
-            case OPCODE_INPUT:
+            case 3:
                 // abort if our input queue is empty
-                if (this.input.length === 0) return 'input';
+                if (this.input.length === 0) return {
+                    didExecute: false,
+                    opCode
+                };
         }
 
         const instruction = this.instructions[opCode];
@@ -75,10 +88,10 @@ class Machine {
             throw err;
         }
 
-        // Flag if we've output something
-        if (opCode === 4) {
-            return 'output';
-        }
+        return {
+            didExecute: true,
+            opCode
+        };
     }
 
     runToInterrupt(maxLoops = Infinity) {
