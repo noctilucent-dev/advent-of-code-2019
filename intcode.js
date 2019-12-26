@@ -54,24 +54,30 @@ class Machine {
     tryExecuteNext() {
         const { opCode, modes } = parseInstruction(this.program[this.instPtr]);
 
-        switch (opCode) {
-            case 99:
-                return {
-                    didExecute: false,
-                    opCode
-                };
+        const result = {
+            opCode
+        };
 
-            case 3:
+        switch (opCode) {
+            case OPCODE_HALT:
+                result.didExecute = false;
+                return result;
+
+            case OPCODE_INPUT:
                 // abort if our input queue is empty
-                if (this.input.length === 0) return {
-                    didExecute: false,
-                    opCode
-                };
+                if (this.input.length === 0) {
+                    result.didExecute = false;
+                    return result;
+                }
         }
 
         const instruction = this.instructions[opCode];
         if (!instruction) {
             throw Error(`Instruction ${opCode} not recognised`);
+        }
+
+        if (opCode === OPCODE_INPUT) {
+            result.input = this.input[this.input.length - 1];
         }
 
         const params = this.program.slice(this.instPtr + 1, this.instPtr + 1 + instruction.params);
@@ -88,10 +94,9 @@ class Machine {
             throw err;
         }
 
-        return {
-            didExecute: true,
-            opCode
-        };
+        result.didExecute = true;
+        
+        return result;
     }
 
     runToInterrupt(maxLoops = Infinity) {
