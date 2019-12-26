@@ -27,17 +27,20 @@ let NAT;
 let useNat = 0;
 let lastNatY;
 
-let inputQueues = machines.map(_ => []);
+//let inputQueues = machines.map(_ => []);
 
 function handleOutput(machine) {
     const [address, x, y] = getOutputs(machine);
     if (address === 255) {
         NAT = [x, y];
     } else {
-        if (!inputQueues[address]) throw new Error(`No input queue for address ${address}`);
+        //if (!inputQueues[address]) throw new Error(`No input queue for address ${address}`);
 
-        inputQueues[address].push(x);
-        inputQueues[address].push(y);
+        machine[address].queueInput(x);
+        machine[address].queueInput(y);
+
+        //inputQueues[address].push(x);
+        //inputQueues[address].push(y);
     }
 }
 
@@ -48,17 +51,26 @@ while(true) {
     machineLoop:
     for(let i=0; i<machines.length; i++) {
         const machine = machines[i];
+        let blocked = true;
 
         inputLoop:
         while (true) {
-            let result = machine.runToInterrupt();
+            let result;
+
+            executeLoop:
+            while(true) {
+                result = machine.tryExecuteNext();
+                if (result.opCode === opCodes.OPCODE_OUTPUT) {
+                    handleOutput(machine);
+                } else if (result.opCode === opCodes.OPCODE_INPUT && result.didExecute)
+                    blocked = false;
+
+                else if (result.opCode === opCodes.OPCODE_INPUT)
+                    break executeLoop;
+            }
 
             if (result === "input") {
-                if(inputQueues[i].length > 0) {
-                    machine.queueInput(inputQueues[i].shift());
-                    machine.queueInput(inputQueues[i].shift());
-
-                } else if (i === 0 && useNat) {
+                if (i === 0 && useNat) {
                     console.log(`Using NAT ${NAT}`);
 
                     if (NAT[1] === lastNatY) {
@@ -72,7 +84,6 @@ while(true) {
                     lastNatY = NAT[1];
                 } else {
                     machinesBlocked++;
-                    machine.queueInput(-1);
                 }
 
                 break inputLoop;
@@ -90,7 +101,7 @@ while(true) {
             console.log(`All machines waiting, but no NAT set yet`);
         } else {
             console.log(`All machines waiting - allow use of NAT`);
-            useNat = 2;
+            useNat = true;
         }
     }
 }
